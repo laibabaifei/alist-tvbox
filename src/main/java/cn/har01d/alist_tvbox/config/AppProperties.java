@@ -5,6 +5,7 @@ import cn.har01d.alist_tvbox.util.Constants;
 import lombok.Data;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -26,11 +27,12 @@ public class AppProperties {
     private int maxSearchResult = 60;
     private String secretKey;
     private List<String> qns = List.of();
-    private Set<String> tgDrivers = Set.of("0", "1", "2", "3", "5", "6", "7", "8", "9", "10");
+    private List<String> tgDrivers = Arrays.asList(Constants.TG_DRIVERS.split(","));
     private String userAgent = Constants.USER_AGENT;
     private String tgChannels = Constants.TG_CHANNELS;
     private String tgWebChannels = Constants.TG_WEB_CHANNELS;
     private String tgSearch;
+    private String tgSortField = "time";
     private String systemId;
     private int tgTimeout = 5000;
     private int tempShareExpiration = 24;

@@ -45,7 +45,6 @@
             :value="item.value"
           />
         </el-select>
-        &nbsp;&nbsp;
         <el-button :icon="Delete" circle @click="clearSearch"></el-button>
         <el-table :data="filteredResults" v-loading="searching" class="results" @row-click="loadResult">
           <el-table-column prop="vod_name" label="内容">
@@ -140,17 +139,22 @@
       </el-row>
     </el-dialog>
 
-    <el-dialog class="player" v-model="dialogVisible" :fullscreen="true" :show-close="false" @opened="start" @close="stop">
+    <el-dialog class="player" v-model="dialogVisible" :fullscreen="true" :show-close="false" @opened="start"
+               @close="stop">
       <template #header="{ close, titleId, titleClass }">
         <div class="my-header">
           <h5 :id="titleId" :class="titleClass">{{ title }}</h5>
           <div class="buttons">
             <el-button @click="toggleFullscreen">
-              <el-icon class="el-icon--left"><FullScreen /></el-icon>
+              <el-icon class="el-icon--left">
+                <FullScreen/>
+              </el-icon>
               全屏
             </el-button>
             <el-button @click="close">
-              <el-icon class="el-icon--left"><CircleCloseFilled /></el-icon>
+              <el-icon class="el-icon--left">
+                <CircleCloseFilled/>
+              </el-icon>
               关闭
             </el-button>
           </div>
@@ -282,7 +286,11 @@
                     <el-slider v-model="currentVolume" @change="setVolume" :min="0" :max="100" :step="5"/>
                   </template>
                 </el-popover>
-                <el-button @click="showScrape" title="刮削"><el-icon><Connection /></el-icon></el-button>
+                <el-button @click="showScrape" title="刮削">
+                  <el-icon>
+                    <Connection/>
+                  </el-icon>
+                </el-button>
                 <el-popover placement="bottom" width="350px">
                   <template #reference>
                     <el-button :icon="Menu"></el-button>
@@ -405,20 +413,25 @@
         </el-form-item>
         <el-form-item label="网盘类型">
           <el-checkbox-group v-model="drivers">
-            <el-checkbox label="天翼" value="9" />
-            <el-checkbox label="百度" value="10" />
-            <el-checkbox label="夸克" value="5" />
-            <el-checkbox label="UC" value="7" />
-            <el-checkbox label="115" value="8" />
-            <el-checkbox label="123" value="3" />
-            <el-checkbox label="迅雷" value="2" />
-            <el-checkbox label="阿里" value="0" />
-            <el-checkbox label="移动" value="6" />
-            <el-checkbox label="PikPak" value="1" />
+            <VueDraggable ref="el" v-model="list">
+              <el-checkbox v-for="item in list" :label="item.name" :value="item.id" :key="item.id">
+              </el-checkbox>
+            </VueDraggable>
           </el-checkbox-group>
+
         </el-form-item>
         <el-form-item>
           <el-button type="primary" @click="updateDrivers">更新</el-button>
+        </el-form-item>
+        <el-form-item label="排序字段">
+          <el-radio-group v-model="tgSortField" class="ml-4">
+            <el-radio size="large" v-for="item in orders" :key="item.value" :value="item.value">
+              {{ item.label }}
+            </el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="updateOrder">更新</el-button>
         </el-form-item>
         <el-form-item label="默认视频壁纸">
           <el-input v-model="cover"/>
@@ -484,6 +497,7 @@ import {
   Search,
   Setting
 } from "@element-plus/icons-vue";
+import {VueDraggable} from "vue-draggable-plus";
 
 let {toClipboard} = clipBorad();
 
@@ -502,6 +516,7 @@ const keyword = ref('')
 const tgChannels = ref('')
 const tgWebChannels = ref('')
 const tgSearch = ref('')
+const tgSortField = ref('time')
 const tgTimeout = ref(3000)
 const shareType = ref('ALL')
 const title = ref('')
@@ -553,7 +568,49 @@ const meta = ref({
   year: null,
   path: '',
 })
-const drivers = ref(['0', '1', '2', '3', '5', '6', '7', '8', '9', '10'])
+const drivers = ref([])
+const list = ref([
+  {
+    name: '天翼',
+    id: '9'
+  },
+  {
+    name: '百度',
+    id: '10'
+  },
+  {
+    name: '夸克',
+    id: '5'
+  },
+  {
+    name: 'UC',
+    id: '7'
+  },
+  {
+    name: '115',
+    id: '8'
+  },
+  {
+    name: '123',
+    id: '3'
+  },
+  {
+    name: '迅雷',
+    id: '2'
+  },
+  {
+    name: '阿里',
+    id: '0'
+  },
+  {
+    name: '移动',
+    id: '6'
+  },
+  {
+    name: 'PikPak',
+    id: '1'
+  }
+])
 const options = [
   {label: '全部', value: 'ALL'},
   {label: '夸克', value: '5'},
@@ -566,6 +623,13 @@ const options = [
   {label: '迅雷', value: '2'},
   {label: '移动', value: '6'},
   {label: 'PikPak', value: '1'},
+]
+
+const orders = [
+  {label: '时间', value: 'time'},
+  {label: '网盘', value: 'type'},
+  {label: '名称', value: 'name'},
+  {label: '频道', value: 'channel'},
 ]
 
 const handleAdd = () => {
@@ -674,7 +738,15 @@ const updateCover = () => {
 }
 
 const updateDrivers = () => {
-  axios.post('/api/settings', {name: 'tg_drivers', value: drivers.value.join(',')}).then(() => {
+  const content = list.value.map(e => e.id).filter(e => drivers.value.includes(e)).join(',')
+  axios.post('/api/settings', {name: 'tg_drivers', value: content}).then(({data}) => {
+    drivers.value = data.value.split(',')
+    ElMessage.success('更新成功')
+  })
+}
+
+const updateOrder = () => {
+  axios.post('/api/settings', {name: 'tg_sort_field', value: tgSortField.value}).then(() => {
     ElMessage.success('更新成功')
   })
 }
@@ -1465,6 +1537,7 @@ onMounted(async () => {
     tgChannels.value = data.tg_channels
     tgWebChannels.value = data.tg_web_channels
     tgSearch.value = data.tg_search
+    tgSortField.value = data.tg_sort_field || 'time'
     if (data.tg_drivers && data.tg_drivers.length) {
       drivers.value = data.tg_drivers.split(',')
     }
